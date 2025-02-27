@@ -77,35 +77,38 @@ class OrderController extends Controller
     }
 
     private function splitPackages($items)
-    {
-        $packages = [];
-        $remainingItems = $items->sortByDesc('weight')->values()->all();
+{
+    $packages = [];
+    $remainingItems = $items->sortByDesc('weight')->values()->all();
 
-        while (!empty($remainingItems)) {
-            $package = [
-                'items' => [],
-                'total_weight' => 0,
-                'total_price' => 0,
+    $packageIndex = 0;
+    $packages[$packageIndex] = [
+        'items' => [],
+        'total_weight' => 0,
+        'total_price' => 0,
+    ];
+
+    foreach ($remainingItems as $item) {
+        if ($packages[$packageIndex]['total_price'] + $item->price < 250) {
+            $packages[$packageIndex]['items'][] = $item;
+            $packages[$packageIndex]['total_weight'] += $item->weight;
+            $packages[$packageIndex]['total_price'] += $item->price;
+        } else {
+            $packageIndex++;
+            $packages[$packageIndex] = [
+                'items' => [$item],
+                'total_weight' => $item->weight,
+                'total_price' => $item->price,
             ];
-
-            $availableWeight = $items->sum('weight') / ceil($items->sum('price') / 250);
-
-            $tempRemainingItems = $remainingItems;
-            $remainingItems = [];
-
-            foreach ($tempRemainingItems as $item) {
-                if ($package['total_price'] + $item->price < 250 && $package['total_weight'] + $item->weight <= $availableWeight) {
-                    $package['items'][] = $item;
-                    $package['total_weight'] += $item->weight;
-                    $package['total_price'] += $item->price;
-                } else {
-                    $remainingItems[] = $item;
-                }
-            }
-
-            $package['courier_price'] = $this->calculateCourierCharge($package['total_weight']);
-            $packages[] = $package;
         }
+    }
+
+    foreach ($packages as &$package) {
+        $package['courier_price'] = $this->calculateCourierCharge($package['total_weight']);
+    }
+
+    return $packages;
+}
 
         return $packages;
     }

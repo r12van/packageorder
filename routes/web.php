@@ -4,12 +4,12 @@ use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\OrderController;
 
-Route::get('/order', [OrderController::class, 'index'])->name('orders.index');
+Route::get('/', [OrderController::class, 'index'])->name('orders.index');
 Route::post('/process-order', [OrderController::class, 'processOrder']);
 
-Route::get('/', function () {
-    return view('welcome');
-});
+// Route::get('/', function () {
+//     return view('welcome');
+// });
 
 Route::get('/dashboard', function () {
     return view('dashboard');

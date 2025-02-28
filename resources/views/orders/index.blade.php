@@ -1,27 +1,36 @@
+{{-- resources/views/orders/index.blade.php --}}
+
 @extends('layouts.app')
 
 @section('title', 'Order Products')
 
 @section('content')
-    <div id="productListSection">
-        <h2>Product List</h2>
-        <ul class="list-group">
-            @foreach ($products as $product)
-                <li class="list-group-item">
-                    <input type="checkbox" class="product-checkbox" value="{{ $product->id }}">
-                    {{ $product->name }} - ${{ $product->price }} - {{ $product->weight }}g
-                </li>
-            @endforeach
-        </ul>
-        <button id="placeOrderBtn" class="btn btn-primary mt-3">Place Order</button>
-    </div>
+    <div class="row">
+        <div class="col-md-6">
+            <div id="productListSection">
+                <h2>Product List</h2>
+                <ul class="list-group" style="max-height: 500px; overflow-y: auto;">
+                    @foreach ($products as $product)
+                        <li class="list-group-item">
+                            <input type="checkbox" class="product-checkbox" value="{{ $product->id }}">
+                            {{ $product->name }} - ${{ $product->price }} - {{ $product->weight }}g
+                        </li>
+                    @endforeach
+                </ul>
+                <button id="placeOrderBtn" class="btn btn-primary mt-3">Place Order</button>
+            </div>
+        </div>
 
-    <div id="orderResult" class="mt-4" style="display: none;">
-        <h3>This order has following packages:</h3>
-        <div id="packageList"></div>
-        <button id="reOrderBtn" class="btn btn-secondary mt-3" style="display: none;">Re-order</button>
-    </div>
+        <div class="col-md-6">
+            <div id="orderResult" class="mt-4" style="display: none;">
+                <h3>This order has following packages:</h3>
+                <div id="selectedItemsTable"></div>
+                <div id="packageTable"></div>
+                <button id="reOrderBtn" class="btn btn-secondary mt-3" style="display: none;">Re-order</button>
+            </div>
+        </div>
 
+    </div>
 @endsection
 
 @push('scripts')
@@ -37,7 +46,7 @@
                 lastSelectedItems = selectedItems; // Store for re-order
 
                 $.ajax({
-                    url: '/process-order',
+                    url: '{{route('orders.process')}}',
                     type: 'POST',
                     data: {
                         selected_items: selectedItems,
@@ -45,21 +54,28 @@
                     },
                     dataType: 'json',
                     success: function(response) {
-                        $('#productListSection').hide();
                         $('#orderResult').show();
 
-                        let packageHtml = '';
-                        response.packages.forEach(function(package, index) {
-                            packageHtml += '<div class="card mt-2"><div class="card-body">';
-                            packageHtml += '<h4>Package ' + (index + 1) + '</h4>';
-                            packageHtml += '<p><strong>Items:</strong> ' + package.items.map(item => item.name).join(', ') + '</p>';
-                            packageHtml += '<p><strong>Total weight:</strong> ' + package.total_weight + 'g</p>';
-                            packageHtml += '<p><strong>Total price:</strong> $' + package.total_price + '</p>';
-                            packageHtml += '<p><strong>Courier price:</strong> $' + package.courier_price + '</p>';
-                            packageHtml += '</div></div>';
+                        // Selected Items Table
+                        let selectedTableHtml = '<table class="table table-bordered"><thead><tr><th>Items</th><th>Weight (g)</th><th>Price ($)</th></tr></thead><tbody>';
+                        let totalPrice = 0;
+                        response.packages.forEach(function(package) {
+                            package.items.forEach(function(item) {
+                                selectedTableHtml += '<tr><td>' + item.name + '</td><td>' + item.weight + '</td><td>' + item.price + '</td></tr>';
+                                totalPrice += parseFloat(item.price);
+                            });
                         });
+                        selectedTableHtml += '<tr><td colspan="2"><strong>Total</strong></td><td><strong>' + totalPrice + '</strong></td></tr>';
+                        selectedTableHtml += '</tbody></table>';
+                        $('#selectedItemsTable').html(selectedTableHtml);
 
-                        $('#packageList').html(packageHtml);
+                        // Package Items Table
+                        let packageTableHtml = '<table class="table table-bordered"><thead><tr><th>Package</th><th>Items</th><th>Weight (g)</th><th>Price ($)</th><th>Courier ($)</th></tr></thead><tbody>';
+                        response.packages.forEach(function(package, index) {
+                            packageTableHtml += '<tr><td>' + (index + 1) + '</td><td>' + package.items.map(item => item.name).join(', ') + '</td><td>' + package.total_weight + '</td><td>' + package.total_price + '</td><td>' + package.courier_price + '</td></tr>';
+                        });
+                        packageTableHtml += '</tbody></table>';
+                        $('#packageTable').html(packageTableHtml);
                         $('#reOrderBtn').show();
 
                         // Clear checkboxes
@@ -73,16 +89,15 @@
 
             $('#reOrderBtn').click(function() {
                 //Re-order logic
-                $('#productListSection').show();
                 $('#orderResult').hide();
-                $('#packageList').html('');
+                $('#packageTable').html('');
                 $('#reOrderBtn').hide();
 
                 //Select previous items
-                $('.product-checkbox').prop('checked', false);
-                lastSelectedItems.forEach(function(itemId){
-                    $('.product-checkbox[value="'+itemId+'"]').prop('checked', true);
-                });
+                // $('.product-checkbox').prop('checked', false);
+                // lastSelectedItems.forEach(function(itemId){
+                //     $('.product-checkbox[value="'+itemId+'"]').prop('checked', true);
+                // });
 
             });
         });

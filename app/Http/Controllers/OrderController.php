@@ -80,26 +80,41 @@ class OrderController extends Controller
     {
         $packages = [];
         $remainingItems = $items->sortByDesc('weight')->values()->all();
+        $numPackages = ceil($items->sum('price') / 250);
+        $targetWeight = ceil($items->sum('weight') / $numPackages);
+        $packageWeights = array_fill(0, $numPackages, 0);
 
-        $packageIndex = 0;
-        $packages[$packageIndex] = [
-            'items' => [],
-            'total_weight' => 0,
-            'total_price' => 0,
-        ];
+        for ($i = 0; $i < $numPackages; $i++) {
+            $packages[$i] = [
+                'items' => [],
+                'total_weight' => 0,
+                'total_price' => 0,
+            ];
+        }
 
         foreach ($remainingItems as $item) {
-            if ($packages[$packageIndex]['total_price'] + $item->price < 250) {
-                $packages[$packageIndex]['items'][] = $item;
-                $packages[$packageIndex]['total_weight'] += $item->weight;
-                $packages[$packageIndex]['total_price'] += $item->price;
+            $minWeightPackageIndex = array_search(min($packageWeights), $packageWeights);
+
+            if ($packages[$minWeightPackageIndex]['total_price'] + $item->price < 250) {
+                $packages[$minWeightPackageIndex]['items'][] = $item;
+                $packages[$minWeightPackageIndex]['total_weight'] += $item->weight;
+                $packages[$minWeightPackageIndex]['total_price'] += $item->price;
+                $packageWeights[$minWeightPackageIndex] += $item->weight;
             } else {
-                $packageIndex++;
-                $packages[$packageIndex] = [
-                    'items' => [$item],
-                    'total_weight' => $item->weight,
-                    'total_price' => $item->price,
-                ];
+                // Find a package with the least price.
+                $minPricePackageIndex = 0;
+                $minPrice = $packages[0]['total_price'];
+                for ($j = 1; $j < $numPackages; $j++) {
+                    if ($packages[$j]['total_price'] < $minPrice) {
+                        $minPrice = $packages[$j]['total_price'];
+                        $minPricePackageIndex = $j;
+                    }
+                }
+
+                $packages[$minPricePackageIndex]['items'][] = $item;
+                $packages[$minPricePackageIndex]['total_weight'] += $item->weight;
+                $packages[$minPricePackageIndex]['total_price'] += $item->price;
+                $packageWeights[$minPricePackageIndex] += $item->weight;
             }
         }
 

@@ -1,5 +1,3 @@
-{{-- resources/views/orders/index.blade.php --}}
-
 @extends('layouts.app')
 
 @section('title', 'Order Products')
@@ -36,14 +34,10 @@
 @push('scripts')
     <script>
         $(document).ready(function() {
-            let lastSelectedItems = [];
-
             $('#placeOrderBtn').click(function() {
                 let selectedItems = $('.product-checkbox:checked').map(function() {
                     return $(this).val();
                 }).get();
-
-                lastSelectedItems = selectedItems; // Store for re-order
 
                 $.ajax({
                     url: '{{route('orders.process')}}',
@@ -86,18 +80,11 @@
                     }
                 });
             });
-
+            // Re-order Button
             $('#reOrderBtn').click(function() {
-                //Re-order logic
                 $('#orderResult').hide();
                 $('#packageTable').html('');
                 $('#reOrderBtn').hide();
-
-                //Select previous items
-                // $('.product-checkbox').prop('checked', false);
-                // lastSelectedItems.forEach(function(itemId){
-                //     $('.product-checkbox[value="'+itemId+'"]').prop('checked', true);
-                // });
 
             });
         });

@@ -40,12 +40,13 @@ class OrderController extends Controller
             ];
         }
 
-        //Optional: Save the order, packages and items into database
+        //Save the order, packages and items into database
         $order = Order::create([
             'total_price' => $totalPrice,
             'total_weight' => $totalWeight,
         ]);
 
+        //Save details of the packages
         foreach($packages as $packageData){
             $package = Package::create([
                 'order_id' => $order->id,
